@@ -55,43 +55,83 @@ totals, rank=rankbwt(bw)
 first=firstcol(totals)
 #print(first)
 bits=list()
+print(first)
 
+def overlap():
+        return 0    
+            
 def bsearch(bw,p):
     l=first[p[-1]]
     r=l+totals[p[-1]]
     i=len(p)-2
-    while i>=0 and l<r:
+    n_occ=0
+    l_extra=list()
+    while i>=0 and (l<r or l_extra):
+        extra=[]
+        l_last_extra=[]
+     #   print(l_extra)
+      #  print(list(map(lambda x:sa[x],l_extra)))
         z=l
-        o=l
-        while bw[z:r].find('0')!=-1 and i!=0:
-            f=bw[z:r].find("0")
-            bits.append((i,sa[z+f]))
-            z=z+f+1
-        while bw[o:r].find('1')!=-1 and i!=0:
-            f=bw[o:r].find("1")
-            bits.append((i,sa[o+f]))
-            o=o+f+1
+        if i!=0:
+            for j in range(len(msa)):
+                while bw[z:r].find(str(j))!=-1:
+                    f=bw[z:r].find(str(j))
+                    jc=str(j)
+                    if sa[z+f]==msa[j][0]+(msa[j][1]+1)*msa[j][2]: 
+                        l_alts=first[str(j)]
+                        r_alts=l_alts+totals[str(j)]
+                        extra.extend(range(l_alts,r_alts))
+                    elif sa.index(msa[j][0]) not in extra: 
+                        extra.append(sa.index(msa[j][0]))
+                    z=z+f+1
+                for jj in l_extra:
+                    jc=str(j)
+                    if bw[jj]==str(j):
+                        if sa[jj]==msa[j][0]+(msa[j][1]+1)*msa[j][2]:
+                            l_alts=first[str(j)]
+                            r_alts=l_alts+totals[str(j)]
+                            extra.extend(range(l_alts,r_alts))
+                        elif sa.index(msa[j][0]) not in extra: 
+                            extra.append(sa.index(msa[j][0])) 
+      #  print(list(map(lambda x:sa[x],extra)))
+      #  print(l,r)
+        if extra:
+            for j in extra:
+                if bw[j]==p[i]:
+                    l_last_extra.append(j)
+        if l_extra:
+            for jj in l_extra:
+                if bw[jj]==p[i]:
+                    l_last_extra.append(jj)
         if bw[l:r].find(p[i])!=-1:
             l_last=l+bw[l:r].find(p[i])
         else:
-            return 0
+            l=-1
+            r=-1
+            if not l_last_extra:
+                return 0, 'n'
         if bw[l:r].rfind(p[i])!=-1:
             r_last=l+bw[l:r].rfind(p[i])
-        l=first[p[i]]+rank[l_last]
-        r=first[p[i]]+rank[r_last]+1
+        if l>=0:
+            l=first[p[i]]+rank[l_last]
+            r=first[p[i]]+rank[r_last]+1
+        if l>=r: 
+            l=-1
+            r=-1
+            if not l_last_extra:
+                return 0, 'n'
+        if l_last_extra: l_extra=list(map(lambda x:first[p[i]]+rank[x],l_last_extra))
+        else: l_extra=[]
         i=i-1
-    return r-l, sa[l:r]
+    offsets=list()
+    if i<0:
+        if r<l: 
+            n_occ=r-l
+            offsets.extend(sa[l:r])
+            offsets.append('o')
+        if l_extra:
+            n_occ+=len(l_extra)
+            offsets.extend(list(map(lambda x:sa[x],l_extra)))
+    return n_occ,offsets
 
 print(bsearch(bw,p))
-
-print(bits)
-if bits!=[]:
-    for ii,p_end in bits:
-        print(ii,p_end)
-        c, ind=bsearch(bw,p[0:(ii+1)])
-        for j in ind:
-            sep=int(s[p_end-1])
-            if msa[sep][0]+(msa[sep][1]+1)*msa[sep][2]==p_end:
-                if s[j+ii+1]==s[p_end-1]: print(j,p_end,"#")
-            else:
-                if msa[sep][0]==j+ii+1: print(j,p_end,"#")
